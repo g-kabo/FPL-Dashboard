@@ -1,0 +1,490 @@
+---
+title: "Fantasy Premier League Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r}
+#knitr::opts_chunk$set(cache=TRUE)
+```
+
+
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(plotly)
+library(viridis)
+library(tidytext)
+library(DT)
+
+
+
+
+# Data Setup
+
+#FPL
+myfile = "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data/2020-21/cleaned_players.csv" 
+
+#Player ID List
+myfile2 = "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data/2020-21/player_idlist.csv"  
+
+#Raw Player Data
+myfile3 ="https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data/2020-21/players_raw.csv" 
+
+# Teams id List
+myfile4 = "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data/2020-21/teams.csv" 
+
+FPL <-read_delim(myfile,delim=",")
+Player_ID_List <-read_delim(myfile2,delim=",")
+Players_Raw <-read_delim(myfile3,delim=",")
+Teams <- read_delim(myfile4,delim=",")
+
+
+
+FPL=full_join(FPL,Player_ID_List,by = c("first_name","second_name"))
+
+FPL = Teams%>%
+  rename(team=id)%>%                                  # Rename id to team_id
+  select(team,name,short_name)%>%    
+  right_join(Players_Raw,by="team")%>%                #join onto players raw to match a player to his team
+  select(id,value_form,value_season,name,short_name,form)%>% 
+  right_join(FPL,by="id")%>%                          #join onto the FPL 
+  relocate(element_type, .after=second_name) %>%
+  relocate(name, .after=element_type)%>%
+  relocate(value_form, .after=last_col())%>%
+  relocate(value_season, .after=last_col())%>%
+  relocate(form, .after=last_col())%>%
+  relocate(short_name, .after=last_col())%>%
+  rename(pure_form=form)
+
+
+FPL = FPL %>%
+    mutate(now_cost = now_cost/10,
+           element_type=  factor(FPL$element_type , levels=c("GK", "DEF", "MID", "FWD")),
+           name = factor(name),
+           short_name = factor(short_name)
+           )
+
+
+FPL_played = FPL %>%
+  filter(minutes > 0)
+
+
+
+```
+
+# Opening Page 
+
+In this dashboard we will take a a look at the Fantasy Premier League data for the 2020-21 Season. All the data here will explore the players who have played **at least** one minute of game time. To see the full list of all players, please see the table on the final page. 
+
+**Note:** If a page fails to display, **refresh** the page to make it reappear.
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+
+
+### Chart A
+
+
+```{r, out.height= 300 , out.width= 500}
+ p= ggplot(FPL_played,aes(x=total_points),
+           text
+           
+           
+           )+
+  geom_histogram(binwidth=1)+
+  theme_bw()+
+  labs(title="Points Distribution" ,x="Total Points",y="Count")
+
+#p
+plotly::ggplotly(p)
+```
+
+
+   
+### Points Distribution By Position
+
+```{r, out.height= 300 , out.width= 500}
+p = FPL_played %>%
+  ggplot(aes(x=total_points,fill=element_type))+
+  geom_histogram(binwidth=1)+
+  facet_wrap(.~element_type,scales="free_y")+
+  theme_bw()+
+  labs(title=NULL ,x="Total Points",y="Count")+
+  theme(legend.position = "none")
+
+p
+#plotly::ggplotly(p)
+```   
+
+
+
+Column 
+-----------------------------------------------------------------------
+
+    
+### Chart C 
+    
+```{r, out.height= 300 , out.width= 500}
+p=FPL_played %>%
+  ggplot(aes(x=now_cost,y=total_points,col=element_type,fill=element_type,
+             text=paste0( paste(first_name,second_name),
+                          "\n",name,
+                          "\nPoints: ",total_points,
+                          "\nPrice: £",now_cost)
+             ))+
+  geom_point(size=3)+
+  theme_bw()+
+  labs(title="Price vs Total Points",x="Price (£)",y="Points")
+
+#p
+plotly::ggplotly(p,tooltip="text")
+```
+    
+### Players With The Highest Total Points
+
+```{r, out.height= 300 , out.width= 500}
+FPL_played %>%
+  select(first_name,second_name,name,element_type,total_points,now_cost)%>%
+  arrange(desc(total_points))%>%
+  dplyr::rename( "First Name" = first_name,
+                 "Second Name" = second_name,
+                 "Team" = name,
+                 "Position"=element_type,
+                 "Total Points"=total_points,
+                 "Price (£)" =now_cost )%>%
+  knitr::kable()
+
+```
+# Highest Performing Teams and Positions 
+
+In this section we will look at that best performing teams by position. The points are ordered by average performance for a given performance from worst to best. **Pure Form** refers to the total number of points scored over the previous month.
+
+Row
+-------------------------------------
+    
+### 
+    
+```{r}
+
+#Helper Function to create plotly objects
+Team_Mean_plotly <-  function(data,target_var){
+  
+  
+  set.seed(5510)
+  ggplot(data,aes(x= reorder(short_name,{{target_var}}),y={{target_var}},fill=short_name,
+              text=paste0(paste(first_name,second_name),
+                          "\n", name,
+                          "\nPure Form: ",pure_form,
+                          "\nValue Form: ",value_form,
+                          "\nPrice: £",now_cost,
+                          "\nTotal Points: ",total_points
+                          )
+             ))+
+  geom_jitter(height=0,width =0.2,size=3.5)+
+  theme_bw()+
+  theme(legend.position = "none",
+        panel.grid.major.x= element_blank())+
+  scale_x_discrete(guide = guide_axis(n.dodge=2))+
+  scale_shape_manual(values=c(23,21))+
+    labs(x=NULL)
+}
+
+```
+ 
+```{r, out.height= 300 , out.width= 500}
+p=FPL_played%>%
+  filter(element_type =="GK")%>%
+  Team_Mean_plotly(.,pure_form)+
+  labs(title="Goalkeepers",y="Pure Form")
+
+
+
+plotly::ggplotly(p,tooltip="text")
+```
+ 
+ 
+### 
+    
+```{r, out.height= 300 , out.width= 500}
+p=FPL_played%>%
+  filter(element_type =="MID")%>%
+  Team_Mean_plotly(.,pure_form)+
+  labs(title="Midfielders",y="Pure Form")
+
+plotly::ggplotly(p,tooltip="text")
+``` 
+
+Row
+-------------------------------------
+    
+### 
+    
+```{r, out.height= 300 , out.width= 500}
+p=FPL_played%>%
+  filter(element_type =="DEF")%>%
+  Team_Mean_plotly(.,pure_form)+
+  labs(title="Defenders",y="Pure Form")
+
+
+
+plotly::ggplotly(p,tooltip="text")
+```
+    
+### 
+
+```{r, out.height= 300 , out.width= 500}
+
+p=FPL_played%>%
+  filter(element_type =="FWD")%>%
+  Team_Mean_plotly(.,pure_form)+
+  labs(title="Forwards",y="Pure Form")
+
+
+
+plotly::ggplotly(p,tooltip="text")
+```
+
+
+
+
+
+
+
+
+
+
+# Selection and Price
+
+**Selection** is the percent of all managers who have chosen this player in their team. **Price** refers to the amount it costs to purchase a player for a manager's team.
+
+
+Column 
+-------------------------------------
+
+### 
+    
+```{r,fig.width=10, fig.height=5}
+  FPL_played %>%
+  arrange(desc(selected_by_percent))%>%
+  dplyr::group_by(element_type)%>%
+  slice_max(order_by = selected_by_percent,n=10)%>%
+  #select(first_name,second_name,element_type,name,bonus) %>%
+  ggplot(aes(y=reorder_within(x=second_name,
+                              by=selected_by_percent,
+                              within =  element_type),
+             x=selected_by_percent,fill=element_type))+
+  geom_col()+
+  geom_text(aes(label=selected_by_percent),hjust=1.1)+
+  facet_wrap(.~element_type,scales = "free")+
+  theme_bw()+
+  scale_y_reordered()+
+  labs(title="Top 10 Most Selected Players by Position",x="Selection (%)",y=NULL)+
+  theme(legend.position = "none")
+
+``` 
+
+
+    
+### Most Selected Players
+    
+```{r,out.height= 200}
+
+FPL_played %>%
+  select(first_name,second_name,name,element_type,selected_by_percent)%>%
+  arrange(desc(selected_by_percent))%>%
+  dplyr::rename( "First Name" = first_name,
+                 "Second Name" = second_name,
+                 "Team" = name,
+                 "Position"=element_type,
+                 "Selection (%)" = selected_by_percent)%>%
+  knitr::kable()
+
+```
+ 
+
+Column 
+-------------------------------------
+    
+    
+    
+    
+### 
+
+```{r,fig.width=10, fig.height=5}
+  FPL_played %>%
+  arrange(desc(now_cost))%>%
+  dplyr::group_by(element_type)%>%
+  slice_max(order_by = now_cost,n=5, with_ties = TRUE)%>%
+  #select(first_name,second_name,element_type,name,bonus) %>%
+  ggplot(aes(y=reorder_within(x=second_name,
+                              by=now_cost,
+                              within =  element_type),
+             x=now_cost,fill=element_type))+
+  geom_col()+
+    geom_text(aes(label=now_cost),hjust=1.1)+
+  facet_wrap(.~element_type,scales = "free")+
+  theme_bw()+
+  scale_y_reordered()+
+  labs(title="Top 5 Most Expensive Players by Position",x="Price (£)",y=NULL)+
+  theme(legend.position = "none")
+
+```    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+### Most Expensive Players
+    
+```{r,out.height= 20}
+
+FPL_played %>%
+  select(first_name,second_name,name,element_type,now_cost)%>%
+  arrange(desc(now_cost))%>%
+  dplyr::rename( "First Name" = first_name,
+                 "Second Name" = second_name,
+                 "Team" = name,
+                 "Position"=element_type,
+                 "Cost (£)" = now_cost)%>%
+  knitr::kable()
+
+
+```
+
+
+
+
+# Performance of all players
+
+
+Row
+-------------------------------------
+
+
+Below is a graph that displays players by price and pure form. The colour refers to a player's value form, and the sizes reflects the percentage of selection by managers.
+
+### Price vs Value Form
+    
+```{r, out.height= 900 , out.width= 1000}
+ p=FPL_played %>%
+    ggplot(aes(x=now_cost,y=pure_form,size=selected_by_percent,col=element_type,
+                text=paste0( paste(first_name,second_name),
+                             "\n",paste(name,element_type),
+                             "\nValue: £",now_cost,
+                             "\nPure Form: ",pure_form,
+                             "\nValue Form: ",value_form,
+                             "\nSelected by ",selected_by_percent," % of managers")
+     ))+
+     geom_point()+
+     theme_bw()+
+     #scale_color_viridis(option="B",begin=0,end=0.8)+
+     #scale_shape_manual(values=(15:18))+
+     #facet_wrap(.~element_type)+
+     labs(title="Player Performance by Price Point ",x="Value (£)",y="Pure Form",col="Position",size=NULL)
+
+ plotly::ggplotly(p,tooltip="text")
+
+```
+ 
+
+# Bonus Point System
+
+Another metric that is available is the bonus point system. Every game the best 3 players that are giving points for having the best performance. There are various ways of getting these points, such as: Key passes, creating big chances, or having a high pass completion rate. Below is a graph that shows the top 5 players having the most accumlated BPS scores over the season, seperated by team.
+
+
+###
+
+```{r,fig.width=10}
+ FPL_played %>%
+  dplyr::group_by(name)%>%
+  slice_max(bps,n=5)%>%
+  #select(first_name,second_name,bps)%>%
+  ungroup(name)%>%
+  ggplot(aes(y=tidytext::reorder_within(x = second_name,
+                                         by = bps,
+                                         within =name ),
+               x=bps,fill=name))+
+  geom_col()+
+  tidytext::scale_y_reordered()+
+  facet_wrap(.~name,scales = "free")+
+  theme_bw()+
+  geom_text(aes(label=bps),hjust=1.1,size=2.5)+
+  theme(legend.position =  "none")+
+  labs(title="Top 5 BPS scores by Team",y="Player",x="Bonus Point System Score")
+
+
+
+```
+
+
+
+
+
+# Table
+
+
+Here is the final table displaying all players in the Fantasy Premier League. The table is able to have filters and it is also possible to move columns around. Feel try to it out.
+
+Data Source: https://github.com/vaastav/Fantasy-Premier-League
+
+###
+
+
+
+```{r}
+FPLtable = FPL %>%
+  select(-short_name,-creativity,-influence,-threat,-ict_index) %>%
+  rename ("Player ID" = id,
+          "First Name" = first_name,
+          "Second Name" = second_name,
+          "Position" = element_type,
+          "Team"=name,
+          "Goals Scored" = goals_scored,
+          "Assists" = assists,
+          "Total Points"=total_points,
+          "Minutes Played" = minutes,
+          "Goals Conceded" = goals_conceded,
+          "Bonus Points" = bonus,
+          "BPS" = bps,
+          "Clean Sheets" = clean_sheets,
+          "Red Cards" = red_cards,
+          "Yellow Cards" = yellow_cards,
+          "Selection (%)" = selected_by_percent,
+          "Price (£)" = now_cost,
+          "Value Form" = value_form,
+          "Value Season" = value_season,
+          "Pure Form" = pure_form
+          )
+```
+
+
+```{r}
+datatable(FPLtable,class = 'cell-border stripe',
+           filter = 'top', 
+           options = list(
+                       pageLength = 50,
+                       colReorder = list(realtime = FALSE)
+          #             fixedColumns = list(leftColumns = 4),
+          #             dom = 'Bfrtip' 
+                         ),
+           extensions = c('ColReorder','FixedColumns'), 
+           fillContainer=TRUE
+           )
+```
+
+
+
