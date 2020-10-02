@@ -273,7 +273,6 @@ Column
   arrange(desc(selected_by_percent))%>%
   dplyr::group_by(element_type)%>%
   slice_max(order_by = selected_by_percent,n=10)%>%
-  #select(first_name,second_name,element_type,name,bonus) %>%
   ggplot(aes(y=reorder_within(x=second_name,
                               by=selected_by_percent,
                               within =  element_type),
@@ -320,7 +319,6 @@ Column
   arrange(desc(now_cost))%>%
   dplyr::group_by(element_type)%>%
   slice_max(order_by = now_cost,n=5, with_ties = TRUE)%>%
-  #select(first_name,second_name,element_type,name,bonus) %>%
   ggplot(aes(y=reorder_within(x=second_name,
                               by=now_cost,
                               within =  element_type),
@@ -391,9 +389,6 @@ Below is a graph that displays players by price and pure form. The colour refers
      ))+
      geom_point()+
      theme_bw()+
-     #scale_color_viridis(option="B",begin=0,end=0.8)+
-     #scale_shape_manual(values=(15:18))+
-     #facet_wrap(.~element_type)+
      labs(title="Player Performance by Price Point ",x="Value (£)",y="Pure Form",col="Position",size=NULL)
 
  plotly::ggplotly(p,tooltip="text")
@@ -412,7 +407,6 @@ Another metric that is available is the bonus point system. Every game the best 
  FPL_played %>%
   dplyr::group_by(name)%>%
   slice_max(bps,n=5)%>%
-  #select(first_name,second_name,bps)%>%
   ungroup(name)%>%
   ggplot(aes(y=tidytext::reorder_within(x = second_name,
                                          by = bps,
@@ -478,8 +472,6 @@ datatable(FPLtable,class = 'cell-border stripe',
            options = list(
                        pageLength = 50,
                        colReorder = list(realtime = FALSE)
-          #             fixedColumns = list(leftColumns = 4),
-          #             dom = 'Bfrtip' 
                          ),
            extensions = c('ColReorder','FixedColumns'), 
            fillContainer=TRUE
