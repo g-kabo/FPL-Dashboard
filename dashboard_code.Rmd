@@ -80,7 +80,12 @@ FPL_played = FPL %>%
 
 In this dashboard we will take a a look at the Fantasy Premier League data for the 2020-21 Season. All the data here will explore the players who have played **at least** one minute of game time. To see the full list of all players, please see the table on the final page. 
 
-**Note:** If a page fails to display, **refresh** the page to make it reappear.
+**Note:** If a page fails to display, **refresh** the page to make it reappear. Dashboard Updated on: 
+```{r}
+paste0("Dashboard Last Update: ",Sys.Date())
+```
+
+
 
 Column {data-width=500}
 -----------------------------------------------------------------------
@@ -91,17 +96,17 @@ Column {data-width=500}
 
 
 ```{r, out.height= 300 , out.width= 500}
- p= ggplot(FPL_played,aes(x=total_points),
-           text
-           
-           
-           )+
+ p= ggplot(FPL_played,aes(x=total_points,
+                          text=paste0("Total Points: ",..count..,
+                                      "\nNumber of Players: ",..x..)
+                            
+                            ))+
   geom_histogram(binwidth=1)+
   theme_bw()+
   labs(title="Points Distribution" ,x="Total Points",y="Count")
 
 #p
-plotly::ggplotly(p)
+ plotly::ggplotly(p,tooltip="text")
 ```
 
 
@@ -131,7 +136,7 @@ Column
     
 ```{r, out.height= 300 , out.width= 500}
 p=FPL_played %>%
-  ggplot(aes(x=now_cost,y=total_points,col=element_type,fill=element_type,
+  ggplot(aes(x=now_cost,y=total_points,fill=element_type,
              text=paste0( paste(first_name,second_name),
                           "\n",name,
                           "\nPoints: ",total_points,
@@ -139,7 +144,7 @@ p=FPL_played %>%
              ))+
   geom_point(size=3)+
   theme_bw()+
-  labs(title="Price vs Total Points",x="Price (£)",y="Points")
+  labs(title="Price vs Total Points",x="Price (£)",y="Points",fill="Position")
 
 #p
 plotly::ggplotly(p,tooltip="text")
@@ -162,7 +167,7 @@ FPL_played %>%
 ```
 # Highest Performing Teams and Positions 
 
-In this section we will look at that best performing teams by position. The points are ordered by average performance for a given performance from worst to best. **Pure Form** refers to the total number of points scored over the previous month.
+In this section we will look at that best performing teams by position. The points are ordered by average performance for a given team from worst to best. **Pure Form** refers to the total number of points scored over the previous month.
 
 Row
 -------------------------------------
@@ -190,7 +195,7 @@ Team_Mean_plotly <-  function(data,target_var){
   theme(legend.position = "none",
         panel.grid.major.x= element_blank())+
   scale_x_discrete(guide = guide_axis(n.dodge=2))+
-  scale_shape_manual(values=c(23,21))+
+#  scale_shape_manual(values=c(23,21))+
     labs(x=NULL)
 }
 
@@ -373,13 +378,13 @@ Row
 -------------------------------------
 
 
-Below is a graph that displays players by price and pure form. The colour refers to a player's value form, and the sizes reflects the percentage of selection by managers.
+Below is a graph that displays players by price and pure form. The colour refers to a player's position, and the sizes reflects the percentage of selection by managers.
 
 ### Price vs Value Form
     
 ```{r, out.height= 900 , out.width= 1000}
  p=FPL_played %>%
-    ggplot(aes(x=now_cost,y=pure_form,size=selected_by_percent,col=element_type,
+    ggplot(aes(x=now_cost,y=pure_form,size=selected_by_percent,fill=element_type,
                 text=paste0( paste(first_name,second_name),
                              "\n",paste(name,element_type),
                              "\nValue: £",now_cost,
@@ -389,7 +394,7 @@ Below is a graph that displays players by price and pure form. The colour refers
      ))+
      geom_point()+
      theme_bw()+
-     labs(title="Player Performance by Price Point ",x="Value (£)",y="Pure Form",col="Position",size=NULL)
+     labs(title="Player Performance by Price Point ",x="Value (£)",y="Pure Form",fill="Position",size=NULL)
 
  plotly::ggplotly(p,tooltip="text")
 
@@ -398,7 +403,7 @@ Below is a graph that displays players by price and pure form. The colour refers
 
 # Bonus Point System
 
-Another metric that is available is the bonus point system. Every game the best 3 players that are giving points for having the best performance. There are various ways of getting these points, such as: Key passes, creating big chances, or having a high pass completion rate. Below is a graph that shows the top 5 players having the most accumlated BPS scores over the season, seperated by team.
+Another metric that is available is the bonus point system. Every game the best 3 players are given points for having the best performance. There are various ways of getting these points, such as: Key passes, creating big chances, or having a high pass completion rate. Below is a graph that shows the top 5 players having the highest accumulated BPS scores over the season, separated by team.
 
 
 ###
