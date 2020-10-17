@@ -80,12 +80,7 @@ FPL_played = FPL %>%
 
 In this dashboard we will take a a look at the Fantasy Premier League data for the 2020-21 Season. All the data here will explore the players who have played **at least** one minute of game time. To see the full list of all players, please see the table on the final page. 
 
-**Note:** If a page fails to display, **refresh** the page to make it reappear. Dashboard Updated on: 
-```{r}
-paste0("Dashboard Last Update: ",Sys.Date())
-```
-
-
+**Note:** If a page fails to display, **refresh** the page to make it reappear. Dashboard Last Updated on: 2020-10-05
 
 Column {data-width=500}
 -----------------------------------------------------------------------
