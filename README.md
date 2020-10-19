@@ -4,6 +4,6 @@ This is the code for the dashboard that looks at the Fantasy Premier League data
 
 **Link to dashboard:** https://rpubs.com/g_kabo/FPL_Dashboard
 
-Note: The dashboard does not dynamically update, meaning old dashboards will not update with new infomation, all a user needs to do is to revisit the link.
+Note: The dashboard does not dynamically update during gameweeks, only at the end of each gameweek. 
 
 The original data source comes from: https://github.com/vaastav/Fantasy-Premier-League
