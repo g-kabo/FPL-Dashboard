@@ -80,7 +80,7 @@ FPL_played = FPL %>%
 
 In this dashboard we will take a a look at the Fantasy Premier League data for the 2020-21 Season. All the data here will explore the players who have played **at least** one minute of game time. To see the full list of all players, please see the table on the final page. 
 
-**Note:** If a page fails to display, **refresh** the page to make it reappear. Dashboard Last Updated on: 2020-10-05
+**Note:** If a page fails to display, **refresh** the page to make it reappear. __*Dashboard Last Updated on: 2020-10-05*__
 
 Column {data-width=500}
 -----------------------------------------------------------------------
@@ -162,7 +162,7 @@ FPL_played %>%
 ```
 # Highest Performing Teams and Positions 
 
-In this section we will look at that best performing teams by position. The points are ordered by average performance for a given team from worst to best. **Pure Form** refers to the total number of points scored over the previous month.
+In this section we will look at that best performing teams by position. The points are ordered by average performance for a given team from worst to best. **Pure Form** refers to the total number of points scored over the previous month. Higher is better.
 
 Row
 -------------------------------------
@@ -404,6 +404,9 @@ Another metric that is available is the bonus point system. Every game the best 
 ###
 
 ```{r,fig.width=10}
+
+
+
  FPL_played %>%
   dplyr::group_by(name)%>%
   slice_max(bps,n=5)%>%
@@ -420,11 +423,9 @@ Another metric that is available is the bonus point system. Every game the best 
   theme(legend.position =  "none")+
   labs(title="Top 5 BPS scores by Team",y="Player",x="Bonus Point System Score")
 
-
+# NOTE : May need to change to BPS score per minute played. This is to account for new/recent players who perform well but do not have many minutes. This may also inflate the score of certain types of players, such as high impact subs.
 
 ```
-
-
 
 
 
