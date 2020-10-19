@@ -92,8 +92,8 @@ Column {data-width=500}
 
 ```{r, out.height= 300 , out.width= 500}
  p= ggplot(FPL_played,aes(x=total_points,
-                          text=paste0("Total Points: ",..count..,
-                                      "\nNumber of Players: ",..x..)
+                          text=paste0("Total Points: ",..x..,
+                                      "\nNumber of Players: ",..count..)
                             
                             ))+
   geom_histogram(binwidth=1)+
