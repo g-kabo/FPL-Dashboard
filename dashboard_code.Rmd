@@ -6,22 +6,38 @@ output:
     vertical_layout: fill
 ---
 
-```{r}
+```{r, include=FALSE}
 #knitr::opts_chunk$set(cache=TRUE)
-```
 
-
-
-```{r setup, include=FALSE}
 library(flexdashboard)
 library(tidyverse)
 library(plotly)
 library(viridis)
 library(tidytext)
 library(DT)
+library(patchwork)
+library(formattable)
+
+
+########################################## TO DO  #################################################
+#
+# Add Points-Per-Game from Players Raw
+#
+# Create tabs For Points-Per-Game for scatter plots
+#
+# Add Fixtures?
+#
+# Add Expected Goals / Assists from fbref
+#
+#
+#
+#
+####################################################################################################
+```
 
 
 
+```{r setup, include=FALSE}
 
 # Data Setup
 
@@ -41,6 +57,8 @@ FPL <-read_delim(myfile,delim=",")
 Player_ID_List <-read_delim(myfile2,delim=",")
 Players_Raw <-read_delim(myfile3,delim=",")
 Teams <- read_delim(myfile4,delim=",")
+
+xp_data <- readRDS("xp_data.rds")
 
 
 
@@ -78,9 +96,9 @@ FPL_played = FPL %>%
 
 # Opening Page 
 
-In this dashboard we will take a a look at the Fantasy Premier League data for the 2020-21 Season. All the data here will explore the players who have played **at least** one minute of game time. To see the full list of all players, please see the table on the final page. 
+In this dashboard we will take a a look at the Fantasy Premier League data for the 2020-21 Season. All the data here will explore the players who have played **at least** one minute of game time. To see the full list of all players, please see the table on the final page. 'Sys.Date()'
 
-**Note:** If a page fails to display, **refresh** the page to make it reappear. __*Dashboard Last Updated on: 2020-10-05*__
+**Note:** If a page fails to display, **refresh** the page to make it reappear. __*Dashboard Last Updated on: 2020-10-27*__
 
 Column {data-width=500}
 -----------------------------------------------------------------------
@@ -108,7 +126,7 @@ Column {data-width=500}
    
 ### Points Distribution By Position
 
-```{r, out.height= 300 , out.width= 500}
+```{r, fig.height= 5 , fig.width= 10}
 p = FPL_played %>%
   ggplot(aes(x=total_points,fill=element_type))+
   geom_histogram(binwidth=1)+
@@ -478,6 +496,222 @@ datatable(FPLtable,class = 'cell-border stripe',
            fillContainer=TRUE
            )
 ```
+
+
+
+# Expected Attacking Performance
+
+In this section we will explore the actual and expected attacking returns. This means looking at the goals, non-penalty goals and assists, as well as the expected variants.
+
+The data comes from FBRef, who also get some of the data from StatsBomb: https://fbref.com/en/comps/9/Premier-League-Stats
+
+
+Column 
+-------------------------------------
+   
+### Top 10 Players In Highest Expected Goals
+
+```{r, fig.width=10}
+p1 <- xp_data %>% 
+    arrange(-x_g   ) %>% 
+  slice_head(n = 10) %>% 
+      ggplot(aes(x = x_g, y = reorder(player, x_g))) + 
+  geom_col(fill = "chartreuse4") + 
+  geom_text(aes(label= x_g),hjust=-.1)+
+  theme_classic() + 
+  theme(panel.grid = element_blank())+
+  labs(title = " Expected Goals", x ="Expect Goals", y = "Player")+
+  xlim(0,5)
+
+p2 <- xp_data %>% 
+    arrange(-npx_g   ) %>% 
+  slice_head(n = 10) %>% 
+      ggplot(aes(x = npx_g, y = reorder(player, npx_g))) + 
+  geom_col(fill = "darkgreen") + 
+  geom_text(aes(label= npx_g),hjust=-.1)+
+  theme_classic() + 
+  theme(panel.grid = element_blank())+
+  labs(title = "Expected Non-Penalty Goals", x ="Expected Non-Penalty Goals", y = "Player")+
+    xlim(0,5)
+
+p1 + p2 + plot_annotation(caption="Source: FBRef and StatsBomb")
+```   
+
+
+### Top 10 Players Over Performing
+
+
+```{r, fig.width=10}
+
+p1 <- xp_data %>% 
+    arrange(-perf_diff_true_goals   ) %>% 
+  slice_head(n = 10) %>% 
+      ggplot(aes(x = perf_diff_true_goals, y = reorder(player, perf_diff_true_goals))) + 
+  geom_col(fill = "chartreuse4") + 
+  geom_text(aes(label= perf_diff_true_goals),hjust=-.1)+
+  theme_classic() + 
+  theme(panel.grid = element_blank())+
+  xlim(0,6)+
+  labs(title = "Expected Goals", x ="Difference From Expected Goals", y = "Player")
+
+
+p2 <- xp_data %>% 
+    arrange( -perf_diff_npgoals   ) %>% 
+  slice_head(n = 10) %>% 
+      ggplot(aes(x = perf_diff_npgoals, y = reorder(player, perf_diff_npgoals))) + 
+  geom_col(fill = "darkgreen") + 
+  geom_text(aes(label= perf_diff_npgoals),hjust=-.1)+
+  theme_classic() + 
+  theme(panel.grid = element_blank())+
+    xlim(0,6)+
+  labs(title = "Expected Non-Penalty Goals", x ="Difference From Expected Goals", y = "Player")
+
+
+
+p1 + p2 + plot_annotation(caption="Source: FBRef and StatsBomb")
+```
+ 
+
+
+Column 
+-------------------------------------
+
+### Player Performance In Expected Assists
+
+```{r, fig.width=10}
+p1 <- xp_data %>% 
+  arrange(-perf_diff_assist) %>% 
+  slice_head(n = 10) %>% 
+  ggplot(aes(x = perf_diff_assist, y = reorder(player, perf_diff_assist))) + 
+  geom_col(fill = "dodgerblue4") + 
+  geom_text(aes(label=perf_diff_assist),hjust=-.1)+
+  theme_classic() + 
+  theme(panel.grid = element_blank())+
+  xlim(0,5)+
+  labs(title = "Over Performing in Expected Assists", x ="Difference From Expected Assists", y = "Player")
+
+
+p2 <- xp_data %>% 
+  arrange(-perf_diff_assist) %>% 
+  slice_tail(n = 10) %>% 
+  ggplot(aes(x = perf_diff_assist, y = reorder(player, perf_diff_assist))) + 
+  geom_col(fill = "dodgerblue1") + 
+  geom_text(aes(label=perf_diff_assist),hjust=1.1)+
+  theme_classic() + 
+  theme(panel.grid = element_blank())+
+  xlim(-2,0)+
+  labs(title = "Under Performing in Expected Assists", x ="Difference From Expected Assits", y = "Player")
+
+
+p1 + p2 + plot_annotation(caption="Source: FBRef and StatsBomb")
+```
+
+
+### Top 10 Players under Performing
+
+```{r, fig.width=10}
+p1 <- xp_data %>% 
+    arrange(-perf_diff_true_goals   ) %>% 
+  slice_tail(n = 10) %>% 
+      ggplot(aes(x = perf_diff_true_goals, y = reorder(player, perf_diff_true_goals))) + 
+  geom_col(fill = "brown2") + 
+  geom_text(aes(label= perf_diff_true_goals),hjust=1.1)+
+  theme_classic() + 
+  theme(panel.grid = element_blank())+
+  xlim(-2,0)+
+  labs(title = "Expected Goals", x ="Difference From Expected Goals", y = "Player")
+
+
+p2 <- xp_data %>% 
+    arrange( -perf_diff_npgoals   ) %>% 
+  slice_tail(n = 10) %>% 
+      ggplot(aes(x = perf_diff_npgoals, y = reorder(player, perf_diff_npgoals))) + 
+  geom_col(fill = "brown4") + 
+  geom_text(aes(label= perf_diff_npgoals),hjust=1.1)+
+  theme_classic() + 
+  theme(panel.grid = element_blank())+
+  xlim(-2,0)+
+  labs(title = "Expected Non-Penalty Goals", x ="Difference From Expected None-Penalty Goals", y = "Player")
+
+
+
+p1 + p2 + plot_annotation(caption="Source: FBRef and StatsBomb")
+```
+
+
+# Table of Expected Attacking Performance
+
+<font size="2"> This is a table to shows the various attacking attributes of a team, this means assists **(A)**, goals **(G)**, and non-penalty goals **(NP/NPG)**; we also see the expected values **(X)**. The combined quantities of **(G+A)** refer to the sum of goals and assists, while **(NPG+A)** refers to the sum of non-penalty goals and assists. The interpretation of **Difference (\_)** can mean whether a player is over-performing, under-performing or just performing to expectations in that metric. A positive value indicates over-performance while a negative indicates under-performance. This can be used to measure a players efficiency, or a lack thereof.
+
+Source: https://fbref.com/en/comps/9/Premier-League-Stats  </font size>
+
+###
+
+```{r}
+
+sign_formatter <- formatter("span", 
+  style = x ~ style(color = ifelse(x > 0, "green", 
+    ifelse(x < 0, "red", "black"))))
+
+align_column=c("c","c","c","c","c","r","c","l","l","r","c","l","r","c","l","r","c","l","r","c","l")
+
+
+
+xp_data %>%
+  relocate(player,starts_with("playing"),true_ast,x_a,perf_diff_assist,true_pk,true_p_katt,true_gls,x_g,perf_diff_true_goals,true_npg,npx_g,perf_diff_npgoals,true_att_returns,xp_att_returns,perf_diff_att_returns,true_att_npg_returns,xp_att_npg,perf_diff_att_npg ) %>%
+  rename("Player" = player,
+    "Matches Played" = playing_time_mp,
+    "Match Starts" = playing_time_starts,
+    "Minutes Played" = playing_time_min,
+    "Minutes Per Match" = playing_mins_per_match,
+    "Assists" = true_ast,
+    "X Assists" = x_a,
+    "Difference (A)" = perf_diff_assist,
+    "Penalty Goals" = true_pk,
+    "Penalty Attempts" = true_p_katt,
+    "Goals" = true_gls,
+    "X Goals" = x_g,
+    "Difference (G)" = perf_diff_true_goals,
+    "NP Goals" = true_npg,
+    "X NP Goals" = npx_g,
+    "Difference (NPG)" = perf_diff_npgoals,
+    "G+A" = true_att_returns,
+    "X (G+A)" = xp_att_returns,
+    "Difference (G+A)" = perf_diff_att_returns,
+    "NPG+A" = true_att_npg_returns,
+    "X (NPG+A)" = xp_att_npg,
+    "Difference (NPG+A)" = perf_diff_att_npg
+         ) %>%
+
+
+formattable(align = align_column,
+  list("Difference (A)"=sign_formatter,
+                 "Difference (G)"=sign_formatter,
+                 "Difference (NPG)"=sign_formatter,
+                 "Difference (G+A)"=sign_formatter,
+                 "Difference (NPG+A)"=sign_formatter
+                 )) %>%
+ # datatable(
+  as.datatable( 
+    class = 'cell-border stripe',
+                filter = 'top',
+                extensions =c("Buttons",'FixedColumns'),
+                options = list( dom = 'Bfrtip',  
+    buttons = c("csv","excel","copy","print"),
+    pageLength=20,
+    dom = 't',
+    scrollX = TRUE,
+    fillContainer=TRUE,
+    fixedColumns = list(leftColumns = 2)
+                )) %>%
+  formatStyle(  c("Assists","X Assists","Difference (A)") ,backgroundColor = "#edfbfd"   ) %>%
+  formatStyle(  c("Goals","X Goals","Difference (G)") ,backgroundColor = "#edfbfd"   ) %>%
+  formatStyle(  c("G+A","X (G+A)","Difference (G+A)") ,backgroundColor = "#edfbfd"   ) 
+```
+
+
+
+
 
 
 
