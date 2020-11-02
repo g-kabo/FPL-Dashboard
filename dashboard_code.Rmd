@@ -27,7 +27,7 @@ library(formattable)
 #
 # Add Fixtures?
 #
-# Add Expected Goals / Assists from fbref
+#
 #
 #
 #
@@ -53,13 +53,14 @@ myfile3 ="https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/maste
 # Teams id List
 myfile4 = "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data/2020-21/teams.csv" 
 
-FPL <-read_delim(myfile,delim=",")
-Player_ID_List <-read_delim(myfile2,delim=",")
-Players_Raw <-read_delim(myfile3,delim=",")
+FPL <- read_delim(myfile,delim=",")
+Player_ID_List <- read_delim(myfile2,delim=",")
+Players_Raw <- read_delim(myfile3,delim=",")
 Teams <- read_delim(myfile4,delim=",")
 
 xp_data <- readRDS("xp_data.rds")
 
+xp_team_data <- readRDS("xp_team_data.rds")
 
 
 FPL=full_join(FPL,Player_ID_List,by = c("first_name","second_name"))
@@ -96,7 +97,7 @@ FPL_played = FPL %>%
 
 # Opening Page 
 
-In this dashboard we will take a a look at the Fantasy Premier League data for the 2020-21 Season. All the data here will explore the players who have played **at least** one minute of game time. To see the full list of all players, please see the table on the final page. 'Sys.Date()'
+In this dashboard we will take a a look at the Fantasy Premier League data for the 2020-21 Season. All the data here will explore the players who have played **at least** one minute of game time. To see the full list of all players, please see the table on the final page.
 
 **Note:** If a page fails to display, **refresh** the page to make it reappear. __*Dashboard Last Updated on: 2020-10-27*__
 
@@ -427,7 +428,7 @@ Another metric that is available is the bonus point system. Every game the best 
 
  FPL_played %>%
   dplyr::group_by(name)%>%
-  slice_max(bps,n=5)%>%
+  slice_max(bps ,n=5)%>%
   ungroup(name)%>%
   ggplot(aes(y=tidytext::reorder_within(x = second_name,
                                          by = bps,
@@ -486,20 +487,24 @@ FPLtable = FPL %>%
 
 
 ```{r}
-datatable(FPLtable,class = 'cell-border stripe',
-           filter = 'top', 
-           options = list(
-                       pageLength = 50,
-                       colReorder = list(realtime = FALSE)
-                         ),
-           extensions = c('ColReorder','FixedColumns'), 
-           fillContainer=TRUE
-           )
+datatable(
+  FPLtable,
+  class = 'cell-border stripe',
+  rownames = FALSE,
+  filter = 'top',
+  options = list(
+    pageLength = 50,
+    colReorder = list(realtime = FALSE)
+  ),
+  extensions = c('ColReorder', 'FixedColumns'),
+  fillContainer = TRUE,
+ # fixedColumns = list(leftColumns = 1) # Causes Error 
+)
 ```
 
 
 
-# Expected Attacking Performance
+# Attacking Performance
 
 In this section we will explore the actual and expected attacking returns. This means looking at the goals, non-penalty goals and assists, as well as the expected variants.
 
@@ -694,7 +699,69 @@ formattable(align = align_column,
  # datatable(
   as.datatable( 
     class = 'cell-border stripe',
-                filter = 'top',
+    rownames = FALSE,
+    filter = 'top',
+    extensions =c("Buttons",'FixedColumns'),
+    options = list( dom = 'Bfrtip',  
+    buttons = c("csv","excel","copy","print"),
+    pageLength=20,
+    dom = 't',
+    scrollX = TRUE,
+    fillContainer=TRUE,
+    fixedColumns = list(leftColumns = 1)
+                )) %>%
+  formatStyle(  c("Assists","X Assists","Difference (A)") ,backgroundColor = "#edfbfd"   ) %>%
+  formatStyle(  c("Goals","X Goals","Difference (G)") ,backgroundColor = "#edfbfd"   ) %>%
+  formatStyle(  c("G+A","X (G+A)","Difference (G+A)") ,backgroundColor = "#edfbfd"   ) 
+```
+
+
+# Teams Table
+Look at the table as well as the values. **GF** stands for goals For, **GA** stands for goals against, **Goal Diff** stands for the goal difference,  **X** refers to the expected value, **Change (\_)** is the true value minus the expected value. **per 90** stats focues on a per-game basis. There may be very minor differences in values due to rounding errors.
+
+###
+
+```{r}
+
+xp_team_data %>%
+  rename("Rank" = rk,
+         "Team" = squad,
+         "Played" = mp,
+         "Wins" = w,
+         "Draws" = d,
+         "Losses" = l,
+         "Points" = pts,
+         "GF" = gf,
+         "X GF" = x_g,
+         "Change (GF)" = diff_gf,
+         "GA" = ga,
+         "X GA" = x_ga,
+         "Change (GA)" = diff_ga,
+         "Goal Diff" = g_diff,
+         "X Goal Diff" = x_g_diff,
+         "Change (Goal Diff)" = diff_g_diff,
+         "GF per 90" = gf_per_90,
+         "X GF per 90"= x_gf_per_90,
+         "Change (GF per 90)" = perf_diff_gf_per_90,
+         "GA per 90" = ga_per_90,
+         "X GA per 90" = x_ga_per_90,
+         "Change (GA per 90)" = perf_diff_ga_per_90,
+         "G Diff per 90" = g_diff_per_90,
+         "X G Diff per 90" = x_g_diff_90,
+         "Change (G Diff per 90)" = perf_diff_90,
+         "Last 5" = last_5
+          ) %>% 
+  formattable(
+    list(
+      "Change (GF)" = sign_formatter,
+      "Change (GA)" = sign_formatter,
+      "Change (Goal Diff)" = sign_formatter,
+      "Change (GF per 90)" = sign_formatter,
+      "Change (GA per 90)" = sign_formatter,
+      "Change (G Diff per 90)"= sign_formatter
+    )) %>%
+    as.datatable( rownames = FALSE,
+    class = 'cell-border stripe',
                 extensions =c("Buttons",'FixedColumns'),
                 options = list( dom = 'Bfrtip',  
     buttons = c("csv","excel","copy","print"),
@@ -704,13 +771,13 @@ formattable(align = align_column,
     fillContainer=TRUE,
     fixedColumns = list(leftColumns = 2)
                 )) %>%
-  formatStyle(  c("Assists","X Assists","Difference (A)") ,backgroundColor = "#edfbfd"   ) %>%
-  formatStyle(  c("Goals","X Goals","Difference (G)") ,backgroundColor = "#edfbfd"   ) %>%
-  formatStyle(  c("G+A","X (G+A)","Difference (G+A)") ,backgroundColor = "#edfbfd"   ) 
+    formatStyle(  c("GF","X GF","Change (GF)",
+                    "Goal Diff","X Goal Diff","Change (Goal Diff)",
+                    "GA per 90","X GA per 90","Change (GA per 90)"
+                    ) ,backgroundColor = "#edfbfd"   )
+
+
 ```
-
-
-
 
 
 

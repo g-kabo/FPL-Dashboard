@@ -7,7 +7,10 @@ library(rvest)
 
 url = "https://fbref.com/en/share/RgcBw"           # Need a better way of getting the data rather than constantly regenerating the table.
 
+
+
 xp_data = read_html(url) %>%
+  html_nodes("table") %>%
   html_table(header=FALSE)
 
 xp_data = xp_data[[1]]
@@ -47,5 +50,6 @@ xp_data = xp_data %>%
 
 
 saveRDS(xp_data,file="xp_data.rds")
+
 
 
