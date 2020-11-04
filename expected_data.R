@@ -5,7 +5,7 @@
 library(tidyverse)
 library(rvest)
 
-url = "https://fbref.com/en/share/RgcBw"           # Need a better way of getting the data rather than constantly regenerating the table.
+url = "https://fbref.com/en/share/5MA6i"           # Need a better way to constantly generate the table, rather than copy pasting link
 
 
 

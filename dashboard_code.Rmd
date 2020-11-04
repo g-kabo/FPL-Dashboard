@@ -146,7 +146,7 @@ Column
 -----------------------------------------------------------------------
 
     
-### Chart C 
+### Current Price and Total Points 
     
 ```{r, out.height= 300 , out.width= 500}
 p=FPL_played %>%
@@ -181,7 +181,7 @@ FPL_played %>%
 ```
 # Highest Performing Teams and Positions 
 
-In this section we will look at that best performing teams by position. The points are ordered by average performance for a given team from worst to best. **Pure Form** refers to the total number of points scored over the previous month. Higher is better.
+In this section we will look at that best performing teams by position. The points are ordered by average performance for a given team from best to worst. **Pure Form** refers to the total number of points scored over the previous month. Higher is better.
 
 Row
 -------------------------------------
@@ -195,16 +195,16 @@ Team_Mean_plotly <-  function(data,target_var){
   
   
   set.seed(5510)
-  ggplot(data,aes(x= reorder(short_name,{{target_var}}),y={{target_var}},fill=short_name,
+  ggplot(data,aes(x= reorder(short_name,-{{target_var}}),y={{target_var}},fill=short_name, 
               text=paste0(paste(first_name,second_name),
                           "\n", name,
                           "\nPure Form: ",pure_form,
-                          "\nValue Form: ",value_form,
+                       #   "\nValue Form: ",value_form,
                           "\nPrice: £",now_cost,
                           "\nTotal Points: ",total_points
                           )
              ))+
-  geom_jitter(height=0,width =0.2,size=3.5)+
+  geom_jitter(height=0,width =0.2,size=3)+
   theme_bw()+
   theme(legend.position = "none",
         panel.grid.major.x= element_blank())+
@@ -417,7 +417,7 @@ Below is a graph that displays players by price and pure form. The colour refers
 
 # Bonus Point System
 
-Another metric that is available is the bonus point system. Every game the best 3 players are given points for having the best performance. There are various ways of getting these points, such as: Key passes, creating big chances, or having a high pass completion rate. Below is a graph that shows the top 5 players having the highest accumulated BPS scores over the season, separated by team.
+Another metric that is available is the bonus point system. Every game the best 3 players are given points for having the best performance. There are various ways of getting these points, such as: key passes, creating big chances, or having a high pass completion rate. Below is a graph that shows the top 5 players having the highest accumulated BPS scores over the season, separated by team.
 
 
 ###
@@ -492,14 +492,22 @@ datatable(
   class = 'cell-border stripe',
   rownames = FALSE,
   filter = 'top',
-  options = list(
-    pageLength = 50,
-    colReorder = list(realtime = FALSE)
-  ),
-  extensions = c('ColReorder', 'FixedColumns'),
+  extensions = c('Buttons','ColReorder', 'FixedColumns'),
   fillContainer = TRUE,
- # fixedColumns = list(leftColumns = 1) # Causes Error 
+  options = list(
+     dom = 'Bfrtip',
+    pageLength = 50,
+    colReorder = list(realtime = FALSE),
+    fixedColumns = list(leftColumns = 3),
+    buttons = c("csv", "excel", "copy", "print")
+  )
 )
+
+
+
+
+
+
 ```
 
 
@@ -526,7 +534,7 @@ p1 <- xp_data %>%
   theme_classic() + 
   theme(panel.grid = element_blank())+
   labs(title = " Expected Goals", x ="Expect Goals", y = "Player")+
-  xlim(0,5)
+  xlim(0, xp_data %>% filter(!is.na(x_g) ) %>% select(x_g) %>% max() + .5  ) # Chooses the biggest value from the non NAs
 
 p2 <- xp_data %>% 
     arrange(-npx_g   ) %>% 
@@ -537,7 +545,7 @@ p2 <- xp_data %>%
   theme_classic() + 
   theme(panel.grid = element_blank())+
   labs(title = "Expected Non-Penalty Goals", x ="Expected Non-Penalty Goals", y = "Player")+
-    xlim(0,5)
+    xlim(0, xp_data %>% filter(!is.na(npx_g) ) %>% select(npx_g) %>% max() + .5  ) 
 
 p1 + p2 + plot_annotation(caption="Source: FBRef and StatsBomb")
 ```   
@@ -556,7 +564,7 @@ p1 <- xp_data %>%
   geom_text(aes(label= perf_diff_true_goals),hjust=-.1)+
   theme_classic() + 
   theme(panel.grid = element_blank())+
-  xlim(0,6)+
+  #xlim(0,6)+
   labs(title = "Expected Goals", x ="Difference From Expected Goals", y = "Player")
 
 
@@ -568,7 +576,7 @@ p2 <- xp_data %>%
   geom_text(aes(label= perf_diff_npgoals),hjust=-.1)+
   theme_classic() + 
   theme(panel.grid = element_blank())+
-    xlim(0,6)+
+ #   xlim(0,6)+
   labs(title = "Expected Non-Penalty Goals", x ="Difference From Expected Goals", y = "Player")
 
 
@@ -585,6 +593,7 @@ Column
 
 ```{r, fig.width=10}
 p1 <- xp_data %>% 
+  filter(!is.na(perf_diff_assist)) %>%
   arrange(-perf_diff_assist) %>% 
   slice_head(n = 10) %>% 
   ggplot(aes(x = perf_diff_assist, y = reorder(player, perf_diff_assist))) + 
@@ -592,11 +601,12 @@ p1 <- xp_data %>%
   geom_text(aes(label=perf_diff_assist),hjust=-.1)+
   theme_classic() + 
   theme(panel.grid = element_blank())+
-  xlim(0,5)+
+  xlim(0, xp_data %>% filter(!is.na(perf_diff_assist) ) %>% select(perf_diff_assist) %>% max() + .25  )+
   labs(title = "Over Performing in Expected Assists", x ="Difference From Expected Assists", y = "Player")
 
 
 p2 <- xp_data %>% 
+  filter( !is.na(perf_diff_assist) ) %>%
   arrange(-perf_diff_assist) %>% 
   slice_tail(n = 10) %>% 
   ggplot(aes(x = perf_diff_assist, y = reorder(player, perf_diff_assist))) + 
@@ -604,7 +614,7 @@ p2 <- xp_data %>%
   geom_text(aes(label=perf_diff_assist),hjust=1.1)+
   theme_classic() + 
   theme(panel.grid = element_blank())+
-  xlim(-2,0)+
+  xlim(xp_data %>% filter(!is.na(perf_diff_assist) ) %>% select(perf_diff_assist) %>% min() -.25  ,0 ) +
   labs(title = "Under Performing in Expected Assists", x ="Difference From Expected Assits", y = "Player")
 
 
@@ -616,18 +626,20 @@ p1 + p2 + plot_annotation(caption="Source: FBRef and StatsBomb")
 
 ```{r, fig.width=10}
 p1 <- xp_data %>% 
-    arrange(-perf_diff_true_goals   ) %>% 
+  filter (  !is.na(perf_diff_true_goals)   ) %>% 
+  arrange(-perf_diff_true_goals   ) %>% 
   slice_tail(n = 10) %>% 
-      ggplot(aes(x = perf_diff_true_goals, y = reorder(player, perf_diff_true_goals))) + 
+  ggplot(aes(x = perf_diff_true_goals, y = reorder(player, perf_diff_true_goals))) + 
   geom_col(fill = "brown2") + 
   geom_text(aes(label= perf_diff_true_goals),hjust=1.1)+
   theme_classic() + 
   theme(panel.grid = element_blank())+
-  xlim(-2,0)+
+  xlim( xp_data %>% filter(!is.na(perf_diff_npgoals) ) %>% select(perf_diff_npgoals) %>% min() -.25   ,0)+
   labs(title = "Expected Goals", x ="Difference From Expected Goals", y = "Player")
 
 
 p2 <- xp_data %>% 
+    filter ( !is.na(perf_diff_true_goals)   ) %>% 
     arrange( -perf_diff_npgoals   ) %>% 
   slice_tail(n = 10) %>% 
       ggplot(aes(x = perf_diff_npgoals, y = reorder(player, perf_diff_npgoals))) + 
@@ -635,7 +647,7 @@ p2 <- xp_data %>%
   geom_text(aes(label= perf_diff_npgoals),hjust=1.1)+
   theme_classic() + 
   theme(panel.grid = element_blank())+
-  xlim(-2,0)+
+  xlim( xp_data %>% filter(!is.na(perf_diff_npgoals) ) %>% select(perf_diff_npgoals) %>% min() -.25   ,0)+
   labs(title = "Expected Non-Penalty Goals", x ="Difference From Expected None-Penalty Goals", y = "Player")
 
 
@@ -689,27 +701,31 @@ xp_data %>%
          ) %>%
 
 
-formattable(align = align_column,
-  list("Difference (A)"=sign_formatter,
-                 "Difference (G)"=sign_formatter,
-                 "Difference (NPG)"=sign_formatter,
-                 "Difference (G+A)"=sign_formatter,
-                 "Difference (NPG+A)"=sign_formatter
-                 )) %>%
- # datatable(
-  as.datatable( 
+  formattable(
+    align = align_column,
+    list(
+      "Difference (A)" = sign_formatter,
+      "Difference (G)" = sign_formatter,
+      "Difference (NPG)" = sign_formatter,
+      "Difference (G+A)" = sign_formatter,
+      "Difference (NPG+A)" = sign_formatter
+    )
+  ) %>%
+  as.datatable(
     class = 'cell-border stripe',
     rownames = FALSE,
-    filter = 'top',
-    extensions =c("Buttons",'FixedColumns'),
-    options = list( dom = 'Bfrtip',  
-    buttons = c("csv","excel","copy","print"),
-    pageLength=20,
-    dom = 't',
-    scrollX = TRUE,
-    fillContainer=TRUE,
-    fixedColumns = list(leftColumns = 1)
-                )) %>%
+   # filter = 'top',
+    extensions = c("Buttons", 'FixedColumns'),
+    options = list(
+     dom = 'Bfrtip',
+      buttons = c("csv", "excel", "copy", "print"),
+      pageLength = 20,
+      dom = 't',
+      scrollX = TRUE,
+      fillContainer = TRUE,
+      fixedColumns = list(leftColumns = 1)
+    )
+  ) %>% 
   formatStyle(  c("Assists","X Assists","Difference (A)") ,backgroundColor = "#edfbfd"   ) %>%
   formatStyle(  c("Goals","X Goals","Difference (G)") ,backgroundColor = "#edfbfd"   ) %>%
   formatStyle(  c("G+A","X (G+A)","Difference (G+A)") ,backgroundColor = "#edfbfd"   ) 
@@ -717,7 +733,7 @@ formattable(align = align_column,
 
 
 # Teams Table
-Look at the table as well as the values. **GF** stands for goals For, **GA** stands for goals against, **Goal Diff** stands for the goal difference,  **X** refers to the expected value, **Change (\_)** is the true value minus the expected value. **per 90** stats focues on a per-game basis. There may be very minor differences in values due to rounding errors.
+**GF** stands denotes goals for, **GA** stands for goals against, **Goal Diff** stands for the goal difference,  **X** refers to the expected value, **Change (\_)** is the true value minus the expected value. **per 90** stats focuses on a per-game basis. There may be very minor differences in values due to rounding errors.
 
 ###
 
