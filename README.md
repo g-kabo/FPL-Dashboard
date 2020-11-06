@@ -6,4 +6,8 @@ This is the code for the dashboard that looks at the Fantasy Premier League data
 
 Note: The dashboard does not dynamically update during gameweeks, only at the end of each gameweek. 
 
-The original data source comes from: https://github.com/vaastav/Fantasy-Premier-League
+The original data source comes from: 
+
+* https://github.com/vaastav/Fantasy-Premier-League
+
+* https://fbref.com/en/comps/9/Premier-League-Stats
