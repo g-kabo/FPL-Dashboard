@@ -17,6 +17,7 @@ library(tidytext)
 library(DT)
 library(patchwork)
 library(formattable)
+library(ggbeeswarm)
 
 
 ########################################## TO DO  #################################################
@@ -99,7 +100,7 @@ FPL_played = FPL %>%
 
 In this dashboard we will take a a look at the Fantasy Premier League data for the 2020-21 Season. All the data here will explore the players who have played **at least** one minute of game time. To see the full list of all players, please see the table on the final page.
 
-**Note:** If a page fails to display, **refresh** the page to make it reappear. __*Dashboard Last Updated on: 2020-10-27*__
+**Note:** If a page fails to display, **refresh** the page to make it reappear. __*Dashboard Last Updated on: 2020-11-03*__
 
 Column {data-width=500}
 -----------------------------------------------------------------------
@@ -204,7 +205,8 @@ Team_Mean_plotly <-  function(data,target_var){
                           "\nTotal Points: ",total_points
                           )
              ))+
-  geom_jitter(height=0,width =0.2,size=3)+
+  #geom_jitter(height=0,width =0.2,size=3)+
+  geom_beeswarm(size=3,groupOnX = TRUE)+
   theme_bw()+
   theme(legend.position = "none",
         panel.grid.major.x= element_blank())+
@@ -794,6 +796,7 @@ xp_team_data %>%
 
 
 ```
+
 
 
 
